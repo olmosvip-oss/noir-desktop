@@ -38,4 +38,3 @@ publish:
   provider: github
   owner: olmosvip-oss
   repo: noir-desktop
-  releaseType: release

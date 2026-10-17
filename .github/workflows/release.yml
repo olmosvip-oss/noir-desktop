@@ -85,16 +85,35 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: "true"
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export APPLE_API_KEY=~/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8
-          if [ "${{ github.event_name }}" = "push" ] || [ "${{ inputs.publish }}" = "true" ]; then PUB=always; else PUB=never; fi
           set -o pipefail
-          if ! npx electron-builder --mac --publish $PUB 2>&1 | tee /tmp/build.log; then
-            # Surface the end of the log as annotations so it is readable without opening the log.
-            grep -v '^\s*$' /tmp/build.log | tail -15 | sed 's/[^[:print:]]//g' | while IFS= read -r l; do echo "::error::${l:0:400}"; done
+          if ! npx electron-builder --mac --publish never 2>&1 | tee /tmp/build.log; then
+            # Surface the error in the run summary so it is readable without opening the log.
+            grep -v '^\s*$' /tmp/build.log | grep -iE 'error|failed|status|message|code' | tail -25 | sed 's/[^[:print:]]//g' | while IFS= read -r l; do echo "::error::${l:0:400}"; done
             exit 1
           fi
+          ls -la dist
+
+      - name: Publish the release
+        if: github.event_name == 'push' || inputs.publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VER=$(node -p "require('./package.json').version")
+          TAG=v$VER
+          if gh release view $TAG >/dev/null 2>&1; then
+            if gh release view $TAG --json assets -q '.assets[].name' | grep -qx Noir.dmg; then
+              echo "::error::$TAG is already released. Bump the version in package.json first."; exit 1
+            fi
+            echo "Removing the incomplete $TAG release so it can be rebuilt."
+            gh release delete $TAG --yes
+          fi
+          # Upload everything to a draft first, then publish, so people never see a half-uploaded release.
+          gh release create $TAG --draft --target "$GITHUB_SHA" --title "Noir $VER" \
+            --notes "Download **Noir.dmg**, open it and drag Noir into Applications. Installed apps update themselves." \
+            dist/Noir.dmg dist/Noir.dmg.blockmap dist/Noir-$VER-mac.zip dist/Noir-$VER-mac.zip.blockmap dist/latest-mac.yml
+          gh release edit $TAG --draft=false --latest
 
       - name: Keep the test build
         if: github.event_name == 'workflow_dispatch'
