@@ -1,11 +1,16 @@
 name: Build Noir for Mac
 
 # Push a tag like v1.0.0 to build, sign, notarize and publish a release.
-# "Run workflow" on the Actions tab makes a signed test build without publishing.
+# "Run workflow" on the Actions tab makes a signed test build; tick "Publish" to release it.
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish as a public release (uses the version in package.json)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -83,7 +88,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export APPLE_API_KEY=~/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8
-          if [ "${{ github.event_name }}" = "push" ]; then PUB=always; else PUB=never; fi
+          if [ "${{ github.event_name }}" = "push" ] || [ "${{ inputs.publish }}" = "true" ]; then PUB=always; else PUB=never; fi
           set -o pipefail
           if ! npx electron-builder --mac --publish $PUB 2>&1 | tee /tmp/build.log; then
             # Surface the end of the log as annotations so it is readable without opening the log.

@@ -29,7 +29,7 @@ That copies it. Paste it as `MAC_CERT_P12_BASE64`.
 ## Make a release
 
 1. Bump `version` in `package.json` (e.g. `1.0.1`).
-2. Create a GitHub release with a new tag like `v1.0.1` (or push the tag).
+2. Actions → **Build Noir for Mac** → Run workflow, tick **Publish** (or push a tag like `v1.0.1`).
 3. The **Build Noir for Mac** action signs, notarizes and publishes `Noir.dmg` to the release. Installed apps update themselves.
 
 Download link that always points to the newest version:
