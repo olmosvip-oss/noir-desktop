@@ -67,10 +67,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export APPLE_API_KEY=~/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8
-          if [ "${{ github.event_name }}" = "push" ]; then
-            npx electron-builder --mac --publish always
-          else
-            npx electron-builder --mac --publish never
+          if [ "${{ github.event_name }}" = "push" ]; then PUB=always; else PUB=never; fi
+          set -o pipefail
+          if ! npx electron-builder --mac --publish $PUB 2>&1 | tee /tmp/build.log; then
+            # Surface the end of the log as annotations so it is readable without opening the log.
+            grep -v '^\s*$' /tmp/build.log | tail -15 | sed 's/[^[:print:]]//g' | while IFS= read -r l; do echo "::error::${l:0:400}"; done
+            exit 1
           fi
 
       - name: Keep the test build
