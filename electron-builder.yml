@@ -1,0 +1,41 @@
+appId: shop.noirmusic.desktop
+productName: Noir
+copyright: Copyright © Noir
+directories:
+  buildResources: build
+  output: dist
+files:
+  - main.js
+  - offline.html
+  - package.json
+protocols:
+  - name: Noir
+    schemes: [noir]
+mac:
+  category: public.app-category.music
+  icon: build/icon.png
+  target:
+    - target: dmg
+      arch: [universal]
+    - target: zip
+      arch: [universal]
+  # The zip is what auto-update downloads; the dmg is what people install first.
+  artifactName: Noir-${version}-mac.${ext}
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # Uses APPLE_API_KEY / APPLE_API_KEY_ID / APPLE_API_ISSUER from the build environment.
+  notarize: true
+  extendInfo:
+    NSCameraUsageDescription: Noir uses your camera when you go live.
+    NSMicrophoneUsageDescription: Noir uses your microphone when you go live.
+dmg:
+  # Fixed name so noirmusic.shop can always link to the latest download.
+  artifactName: Noir.dmg
+  title: Noir
+publish:
+  provider: github
+  owner: olmosvip-oss
+  repo: noir-desktop
+  releaseType: release

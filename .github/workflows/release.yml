@@ -1,0 +1,54 @@
+name: Build Noir for Mac
+
+# Push a tag like v1.0.0 to build, sign, notarize and publish a release.
+# "Run workflow" on the Actions tab makes a signed test build without publishing.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Save the App Store Connect API key for notarizing
+        env:
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+        run: |
+          mkdir -p ~/private_keys
+          printf '%s' "$APPLE_API_KEY_P8" > ~/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8
+
+      - name: Build, sign and notarize
+        env:
+          CSC_LINK: ${{ secrets.MAC_CERT_P12_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          export APPLE_API_KEY=~/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8
+          if [ "${{ github.event_name }}" = "push" ]; then
+            npx electron-builder --mac --publish always
+          else
+            npx electron-builder --mac --publish never
+          fi
+
+      - name: Keep the test build
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Noir-mac
+          path: dist/Noir.dmg

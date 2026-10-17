@@ -1,0 +1,21 @@
+{
+  "name": "noir-desktop",
+  "productName": "Noir",
+  "version": "1.0.0",
+  "description": "Noir for Mac",
+  "main": "main.js",
+  "author": "Noir",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac --publish never"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
+  "devDependencies": {
+    "electron": "^44.8.0",
+    "electron-builder": "^26.15.3"
+  }
+}

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Noir</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #0B0B0C; color: #F2EFEA;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    -webkit-user-select: none; user-select: none;
+  }
+  .wrap { max-width: 360px; padding: 24px; }
+  .dot { width: 72px; height: 72px; border-radius: 50%; background: #E8774F; margin: 0 auto 28px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 8px; }
+  p { font-size: 14px; line-height: 1.5; color: #B9B4AC; margin: 0 0 28px; }
+  button {
+    font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+    background: #F2EFEA; color: #0B0B0C; border: 0; border-radius: 999px; padding: 12px 28px;
+  }
+  button:focus-visible { outline: 2px solid #E8774F; outline-offset: 3px; }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="dot" aria-hidden="true"></div>
+    <h1>You're offline</h1>
+    <p>Noir needs an internet connection. Check your Wi-Fi and try again.</p>
+    <button id="retry" type="button">Try again</button>
+  </main>
+  <script>
+    const target = new URLSearchParams(location.search).get("retry") || "https://noirmusic.shop";
+    const safe = /^https:\/\/(www\.)?noirmusic\.shop(\/|$)/.test(target) ? target : "https://noirmusic.shop";
+    const go = () => { location.href = safe; };
+    document.getElementById("retry").addEventListener("click", go);
+    window.addEventListener("online", go);
+  </script>
+</body>
+</html>
