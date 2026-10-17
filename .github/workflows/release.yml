@@ -23,6 +23,33 @@ jobs:
 
       - run: npm ci
 
+      - name: Check secrets (prints no secret values)
+        env:
+          P12: ${{ secrets.MAC_CERT_P12_BASE64 }}
+          P12_PASS: ${{ secrets.MAC_CERT_PASSWORD }}
+          P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          echo "Lengths: p12=${#P12} pass=${#P12_PASS} p8=${#P8} keyid=${#KEY_ID} issuer=${#ISSUER}"
+          [ -z "$P12" ] && echo "::error::MAC_CERT_P12_BASE64 missing"
+          [ -z "$P12_PASS" ] && echo "::error::MAC_CERT_PASSWORD missing"
+          [ -z "$P8" ] && echo "::error::APPLE_API_KEY_P8 missing"
+          [ -z "$KEY_ID" ] && echo "::error::APPLE_API_KEY_ID missing"
+          [ -z "$ISSUER" ] && echo "::error::APPLE_API_ISSUER missing"
+          echo "$P8" | grep -q "BEGIN PRIVATE KEY" || echo "::error::APPLE_API_KEY_P8 does not look like a .p8 file (no BEGIN PRIVATE KEY line)"
+          echo "$P12" | tr -d ' \n\r' | base64 -D > /tmp/cert.p12 2>/dev/null || echo "::error::MAC_CERT_P12_BASE64 is not valid base64"
+          security create-keychain -p tmp /tmp/check.keychain
+          if security import /tmp/cert.p12 -k /tmp/check.keychain -P "$P12_PASS" -A >/dev/null 2>&1; then
+            echo "Certificate opened with the password."
+            ids=$(security find-identity -v -p codesigning /tmp/check.keychain)
+            echo "$ids"
+            echo "$ids" | grep -q "Developer ID Application" || echo "::error::The .p12 has no 'Developer ID Application' identity. Export that certificate (with its private key) from Keychain."
+          else
+            echo "::error::Could not open the .p12. Either MAC_CERT_PASSWORD is wrong, or the base64 got cut off when pasting."
+          fi
+          security delete-keychain /tmp/check.keychain; rm -f /tmp/cert.p12
+
       - name: Save the App Store Connect API key for notarizing
         env:
           APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
